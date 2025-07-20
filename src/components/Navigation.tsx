@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pickaxe, User, Settings, Trophy } from 'lucide-react';
+import { Pickaxe, User, Trophy, ShoppingBag } from 'lucide-react';
 
 interface NavigationProps {
   activeTab: string;
@@ -10,8 +10,8 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab }) => {
   const navItems = [
     { id: 'mine', icon: Pickaxe, label: 'Mine' },
     { id: 'profile', icon: User, label: 'Profile' },
-    { id: 'achievements', icon: Trophy, label: 'Rewards' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'achievements', icon: Trophy, label: 'Achievements' },
+    { id: 'upgrades', icon: ShoppingBag, label: 'Upgrades' },
   ];
 
   return (

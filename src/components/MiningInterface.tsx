@@ -1,50 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { Zap, Cloud, Sparkles } from 'lucide-react';
+import { UserStats } from '../types';
+import { formatCurrency } from '../utils/gameLogic';
 
 interface MiningInterfaceProps {
-  onMine: (amount: number) => void;
-  miningPower: number;
-  level: number;
+  userStats: UserStats;
+  onMine: () => number | undefined;
+  autoMining: boolean;
+  setAutoMining: (value: boolean) => void;
 }
 
-const MiningInterface: React.FC<MiningInterfaceProps> = ({ onMine, miningPower, level }) => {
+const MiningInterface: React.FC<MiningInterfaceProps> = ({ 
+  userStats, 
+  onMine, 
+  autoMining, 
+  setAutoMining 
+}) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number }>>([]);
-  const [autoMining, setAutoMining] = useState(false);
-  const [energy, setEnergy] = useState(100);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (autoMining && energy > 0) {
-      interval = setInterval(() => {
-        handleMine();
-      }, 2000);
-    }
-    return () => clearInterval(interval);
-  }, [autoMining, energy]);
-
-  useEffect(() => {
-    // Energy regeneration
-    const energyInterval = setInterval(() => {
-      setEnergy(prev => Math.min(100, prev + 1));
-    }, 1000);
-    return () => clearInterval(energyInterval);
-  }, []);
+  const [lastReward, setLastReward] = useState<number>(0);
 
   const handleMine = () => {
-    if (energy < 10) return;
+    if (userStats.energy < 10) return;
     
-    setEnergy(prev => Math.max(0, prev - 10));
     setIsAnimating(true);
     
-    // Calculate mining reward
-    const baseReward = 0.5;
-    const levelBonus = level * 0.1;
-    const powerBonus = miningPower * 0.2;
-    const randomBonus = Math.random() * 0.5;
-    const totalReward = baseReward + levelBonus + powerBonus + randomBonus;
-    
-    onMine(totalReward);
+    const reward = onMine();
+    if (reward) {
+      setLastReward(reward);
+    }
     
     // Create particles
     const newParticles = Array.from({ length: 8 }, (_, i) => ({
@@ -86,25 +70,34 @@ const MiningInterface: React.FC<MiningInterfaceProps> = ({ onMine, miningPower, 
       <div className="mb-6">
         <div className="flex justify-between text-sm text-gray-400 mb-2">
           <span>Energy</span>
-          <span>{energy}/100</span>
+          <span>{userStats.energy}/{userStats.maxEnergy}</span>
         </div>
         <div className="w-full bg-gray-700 rounded-full h-2">
           <div 
             className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${energy}%` }}
+            style={{ width: `${(userStats.energy / userStats.maxEnergy) * 100}%` }}
           ></div>
         </div>
       </div>
+
+      {/* Last Reward Display */}
+      {lastReward > 0 && (
+        <div className="mb-4 text-center">
+          <p className="text-green-400 font-semibold animate-pulse">
+            +{formatCurrency(lastReward)} mined!
+          </p>
+        </div>
+      )}
 
       {/* Mining Button */}
       <div className="relative mb-6">
         <button
           onClick={handleMine}
-          disabled={energy < 10}
+          disabled={userStats.energy < 10}
           className={`relative w-48 h-48 mx-auto rounded-full bg-gradient-to-br from-cyan-500 via-blue-500 to-purple-600 
             shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 
             ${isAnimating ? 'animate-pulse scale-110' : ''} 
-            ${energy < 10 ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-cyan-500/50'}
+            ${userStats.energy < 10 ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-cyan-500/50'}
             disabled:transform-none disabled:hover:scale-100`}
         >
           <div className="absolute inset-2 rounded-full bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center">
@@ -119,8 +112,8 @@ const MiningInterface: React.FC<MiningInterfaceProps> = ({ onMine, miningPower, 
         </button>
         
         <div className="mt-4">
-          <p className="text-white font-semibold">Mining Power: {miningPower}x</p>
-          <p className="text-gray-400 text-sm">Level {level} Bonus Active</p>
+          <p className="text-white font-semibold">Mining Power: {userStats.miningPower}x</p>
+          <p className="text-gray-400 text-sm">Level {userStats.level} Bonus Active</p>
         </div>
       </div>
 
@@ -146,7 +139,8 @@ const MiningInterface: React.FC<MiningInterfaceProps> = ({ onMine, miningPower, 
           <li>• Higher levels increase mining rewards</li>
           <li>• Energy regenerates over time</li>
           <li>• Auto mining works when you're away</li>
-          <li>• Complete achievements for bonuses</li>
+          <li>• Purchase upgrades to boost efficiency</li>
+          <li>• Complete achievements for rewards</li>
         </ul>
       </div>
     </div>
